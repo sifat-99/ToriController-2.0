@@ -190,7 +190,7 @@ const SubmarineDashboard = () => {
         case 'w':
             e.preventDefault();
             setDriveMode('forward');
-            setThrottleLimit(prev => Math.min(Number(prev) + 2, 30));
+            setThrottleLimit(prev => Math.min(Number(prev) + 2, 50));
             setKeyHint('Moving Forward (Speed Up)');
             break;
         case 's':

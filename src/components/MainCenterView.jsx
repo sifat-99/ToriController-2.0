@@ -82,26 +82,34 @@ const MainCenterView = ({ pitch = 0, roll = 0, heading = 0, speedKnots = 0, fron
       predictions.forEach(prediction => {
         const [x, y, width, height] = prediction.bbox;
         const text = `${prediction.class} (${(prediction.score * 100).toFixed(0)}%)`;
+        const isHighAccuracy = prediction.score > 0.75;
+        const color = isHighAccuracy ? '#ef4444' : '#22c55e'; // red-500 or green-500
 
-        ctx.strokeStyle = '#22c55e';
+        ctx.strokeStyle = color;
         ctx.lineWidth = 3;
         ctx.strokeRect(x, y, width, height);
 
         ctx.font = 'bold 14px monospace';
         const textWidth = ctx.measureText(text).width;
-        ctx.fillStyle = '#22c55e';
+        ctx.fillStyle = color;
         ctx.fillRect(x, y > 22 ? y - 22 : 0, textWidth + 8, 22);
 
         ctx.fillStyle = '#000000';
         ctx.fillText(text, x + 4, y > 22 ? y - 6 : 15);
       });
 
-      const uniqueClasses = [...new Set(predictions.map(p => p.class))];
-      setDetectedObjects(prev => {
-        if (prev.join(',') !== uniqueClasses.join(',')) {
-          return uniqueClasses;
+      const classScores = {};
+      predictions.forEach(p => {
+        if (!classScores[p.class] || p.score > classScores[p.class]) {
+          classScores[p.class] = p.score;
         }
-        return prev;
+      });
+      const uniqueClassesWithScores = Object.entries(classScores).map(([cls, score]) => ({ class: cls, score })).sort((a,b) => a.class.localeCompare(b.class));
+      setDetectedObjects(prev => {
+         const newStr = uniqueClassesWithScores.map(c => `${c.class}:${c.score > 0.75}`).join(',');
+         const oldStr = (prev || []).map(c => `${c.class}:${c.score > 0.75}`).join(',');
+         if (newStr !== oldStr) return uniqueClassesWithScores;
+         return prev;
       });
     } catch (e) {
       if (e.name === 'SecurityError') {
@@ -172,16 +180,23 @@ const MainCenterView = ({ pitch = 0, roll = 0, heading = 0, speedKnots = 0, fron
 
             {/* Center Crosshair Overlay */}
             <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-40 mix-blend-screen">
-                <Crosshair size={250} className="text-white/20" strokeWidth={0.5} />
+                {/* <Crosshair size={250} className="text-white/20" strokeWidth={0.5} /> */}
 
 
                 {/* Detected Objects List */}
                 <div className="absolute top-[65%] flex flex-wrap justify-center gap-2 max-w-[80%]">
-                    {detectedObjects.map((obj, i) => (
-                        <span key={i} className="bg-green-500/20 text-green-400 border border-green-500/50 px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider backdrop-blur-sm shadow-[0_0_10px_rgba(34,197,94,0.3)]">
-                            TARGET: {obj}
-                        </span>
-                    ))}
+                    {detectedObjects.map((obj, i) => {
+                        const isHigh = obj.score > 0.75;
+                        return (
+                            <span key={i} className={`px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider backdrop-blur-sm ${
+                                isHigh
+                                ? 'bg-red-500/20 text-red-400 border border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.3)]'
+                                : 'bg-green-500/20 text-green-400 border border-green-500/50 shadow-[0_0_10px_rgba(34,197,94,0.3)]'
+                            }`}>
+                                TARGET: {obj.class}
+                            </span>
+                        );
+                    })}
                 </div>
             </div>
         </div>
