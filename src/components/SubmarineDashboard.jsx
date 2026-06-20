@@ -244,7 +244,7 @@ const SubmarineDashboard = () => {
     if (!info) return "Unknown Serial Port";
     const vid = info.usbVendorId;
     const pid = info.usbProductId;
-    
+
     if (!vid) return "Standard Serial Port";
 
     let vendorName = `USB Device (VID: 0x${vid.toString(16).toUpperCase()})`;
@@ -331,13 +331,13 @@ const SubmarineDashboard = () => {
             } else if (line.startsWith("GPS: ")) {
               const gpsStr = line.replace("GPS: ", "").trim();
               if (gpsStr === "WIRING_ERROR") {
-                 setSats(-2); // Special code for wiring error
+                setSats(-2); // Special code for wiring error
               } else {
-                  const parts = gpsStr.split(",");
-                  if(parts.length === 2) {
-                    setLat(parseFloat(parts[0]));
-                    setLng(parseFloat(parts[1]));
-                  }
+                const parts = gpsStr.split(",");
+                if (parts.length === 2) {
+                  setLat(parseFloat(parts[0]));
+                  setLng(parseFloat(parts[1]));
+                }
               }
             } else if (line.startsWith("GPS_SAT: ")) {
               setSats(parseInt(line.replace("GPS_SAT: ", "").trim()));
@@ -438,49 +438,49 @@ const SubmarineDashboard = () => {
   useEffect(() => {
     let tickCount = 0;
     const pingInterval = setInterval(() => {
-        if (isUsbConnected) return; // If on USB, the reader loop handles everything. Do not ping WiFi.
+      if (isUsbConnected) return; // If on USB, the reader loop handles everything. Do not ping WiFi.
 
-        tickCount++;
+      tickCount++;
 
-        // 1. Fetch Real IMU Data (WiFi) every 1 second
-        fetch(`http://${ipAddress}/imu`, { signal: AbortSignal.timeout(800) })
-            .then(res => {
-                if (!res.ok) throw new Error("Network response was not ok");
-                return res.json();
-            })
-            .then(data => {
-                if (data) {
-                    const p = parseFloat(data.pitch);
-                    const r = parseFloat(data.roll);
-                    const y = parseFloat(data.yaw);
-                    if (!isNaN(p) && !isNaN(r) && !isNaN(y)) {
-                      processIMU(r, p, y);
-                    }
-                }
-            })
-            .catch(err => console.warn("IMU Fetch Error (WiFi):", err.message));
+      // 1. Fetch Real IMU Data (WiFi) every 1 second
+      fetch(`http://${ipAddress}/imu`, { signal: AbortSignal.timeout(800) })
+        .then(res => {
+          if (!res.ok) throw new Error("Network response was not ok");
+          return res.json();
+        })
+        .then(data => {
+          if (data) {
+            const p = parseFloat(data.pitch);
+            const r = parseFloat(data.roll);
+            const y = parseFloat(data.yaw);
+            if (!isNaN(p) && !isNaN(r) && !isNaN(y)) {
+              processIMU(r, p, y);
+            }
+          }
+        })
+        .catch(err => console.warn("IMU Fetch Error (WiFi):", err.message));
 
-        // 2. Ping and Temp every 2 seconds
-        if (tickCount % 2 === 0) {
-            // Ping the main route to check signal
-            fetch(`http://${ipAddress}/`, { mode: 'no-cors' })
-                .then(() => setSignalStrength(100))
-                .catch(() => setSignalStrength(0));
+      // 2. Ping and Temp every 2 seconds
+      if (tickCount % 2 === 0) {
+        // Ping the main route to check signal
+        fetch(`http://${ipAddress}/`, { mode: 'no-cors' })
+          .then(() => setSignalStrength(100))
+          .catch(() => setSignalStrength(0));
 
-            // Fetch Real Temperature Data
-            fetch(`http://${ipAddress}/temp`, { signal: AbortSignal.timeout(1500) })
-                .then(res => {
-                    if (!res.ok) throw new Error("Network response was not ok");
-                    return res.text();
-                })
-                .then(data => {
-                    const parsedTemp = parseFloat(data);
-                    if (!isNaN(parsedTemp)) {
-                        setTemp(parsedTemp);
-                    }
-                })
-                .catch(err => console.warn("Temp Fetch Error (WiFi):", err.message));
-        }
+        // Fetch Real Temperature Data
+        fetch(`http://${ipAddress}/temp`, { signal: AbortSignal.timeout(1500) })
+          .then(res => {
+            if (!res.ok) throw new Error("Network response was not ok");
+            return res.text();
+          })
+          .then(data => {
+            const parsedTemp = parseFloat(data);
+            if (!isNaN(parsedTemp)) {
+              setTemp(parsedTemp);
+            }
+          })
+          .catch(err => console.warn("Temp Fetch Error (WiFi):", err.message));
+      }
 
     }, 1000);
     return () => clearInterval(pingInterval);
@@ -493,65 +493,65 @@ const SubmarineDashboard = () => {
       if (['TEXTAREA'].includes(e.target.tagName)) return;
       if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
 
-      switch(e.key.toLowerCase()) {
+      switch (e.key.toLowerCase()) {
         case 'w':
-            e.preventDefault();
-            setDriveMode('forward');
-            setThrottleLimit(prev => Math.min(Number(prev) + 2, 50));
-            setKeyHint('Moving Forward (Speed Up)');
-            break;
+          e.preventDefault();
+          setDriveMode('forward');
+          setThrottleLimit(prev => Math.min(Number(prev) + 2, 100));
+          setKeyHint('Moving Forward (Speed Up)');
+          break;
         case 's':
-            e.preventDefault();
-            setThrottleLimit(prev => {
-                const newLimit = Math.max(Number(prev) - 2, 0);
-                if (newLimit === 0) setDriveMode('stopped');
-                return newLimit;
-            });
-            setKeyHint('Moving Forward (Speed Down)');
-            break;
+          e.preventDefault();
+          setThrottleLimit(prev => {
+            const newLimit = Math.max(Number(prev) - 2, 0);
+            if (newLimit === 0) setDriveMode('stopped');
+            return newLimit;
+          });
+          setKeyHint('Moving Forward (Speed Down)');
+          break;
         case 'a':
-            e.preventDefault();
-            setFrontFinAngle(prev => Math.max(Number(prev) - 10, -30));
-            setRearFinX(prev=> Math.min(Number(prev) + 10, 30))
-            setKeyHint('Steering Left');
-            break;
+          e.preventDefault();
+          setFrontFinAngle(prev => Math.max(Number(prev) - 10, -30));
+          setRearFinX(prev => Math.min(Number(prev) + 10, 30))
+          setKeyHint('Steering Left');
+          break;
         case 'd':
-            e.preventDefault();
-            setFrontFinAngle(prev => Math.min(Number(prev) + 10, 30));
-            setRearFinX(prev=> Math.max(Number(prev) - 10, -30))
-            setKeyHint('Steering Right');
-            break;
+          e.preventDefault();
+          setFrontFinAngle(prev => Math.min(Number(prev) + 10, 30));
+          setRearFinX(prev => Math.max(Number(prev) - 10, -30))
+          setKeyHint('Steering Right');
+          break;
         case 'arrowup':
-            e.preventDefault();
-            setRearFinY(prev => Math.min(Number(prev) + 5, 45));
-            setKeyHint('Empennage Pitch Up');
-            break;
+          e.preventDefault();
+          setRearFinY(prev => Math.min(Number(prev) + 5, 45));
+          setKeyHint('Empennage Pitch Up');
+          break;
         case 'arrowdown':
-            e.preventDefault();
-            setRearFinY(prev => Math.max(Number(prev) - 5, -45));
-            setKeyHint('Empennage Pitch Down');
-            break;
+          e.preventDefault();
+          setRearFinY(prev => Math.max(Number(prev) - 5, -45));
+          setKeyHint('Empennage Pitch Down');
+          break;
         case 'arrowleft':
-            e.preventDefault();
-            setRearFinX(prev => Math.max(Number(prev) - 5, -45));
-            setKeyHint('Empennage Yaw Left');
-            break;
+          e.preventDefault();
+          setRearFinX(prev => Math.max(Number(prev) - 5, -45));
+          setKeyHint('Empennage Yaw Left');
+          break;
         case 'arrowright':
-            e.preventDefault();
-            setRearFinX(prev => Math.min(Number(prev) + 5, 45));
-            setKeyHint('Empennage Yaw Right');
-            break;
+          e.preventDefault();
+          setRearFinX(prev => Math.min(Number(prev) + 5, 45));
+          setKeyHint('Empennage Yaw Right');
+          break;
         case ' ': // Spacebar
-            e.preventDefault();
-            setDriveMode('stopped');
-            setThrottleLimit(0);
-            setFrontFinAngle(0);
-            setRearFinX(0);
-            setRearFinY(0);
-            setKeyHint('SYSTEM STOPPED');
-            break;
+          e.preventDefault();
+          setDriveMode('stopped');
+          setThrottleLimit(0);
+          setFrontFinAngle(0);
+          setRearFinX(0);
+          setRearFinY(0);
+          setKeyHint('SYSTEM STOPPED');
+          break;
         default:
-            break;
+          break;
       }
     };
 
@@ -563,64 +563,64 @@ const SubmarineDashboard = () => {
 
   // Drive Mode (Forward / Stop / Reverse)
   useEffect(() => {
-      let serialStr = 'STOP';
-      if (driveMode === 'forward') serialStr = 'DIR:FWD';
-      else if (driveMode === 'reverse') serialStr = 'DIR:REV';
-      sendCommand(`/action?dir=${driveMode}`, serialStr);
+    let serialStr = 'STOP';
+    if (driveMode === 'forward') serialStr = 'DIR:FWD';
+    else if (driveMode === 'reverse') serialStr = 'DIR:REV';
+    sendCommand(`/action?dir=${driveMode}`, serialStr);
   }, [driveMode]);
 
   // Speed (PWM ranges 0-255)
   useEffect(() => {
-      if (driveMode === 'stopped') return;
-      const speedPWM = Math.round((throttleLimit / 100) * 255);
-      const timer = setTimeout(() => {
-          sendCommand(`/speed?val=${speedPWM}`, `SPD:${speedPWM}`);
-      }, 50); // 50ms debounce
-      return () => clearTimeout(timer);
+    if (driveMode === 'stopped') return;
+    const speedPWM = Math.round((throttleLimit / 100) * 255);
+    const timer = setTimeout(() => {
+      sendCommand(`/speed?val=${speedPWM}`, `SPD:${speedPWM}`);
+    }, 50); // 50ms debounce
+    return () => clearTimeout(timer);
   }, [throttleLimit, driveMode]);
 
   // Front Fin (Bow Planes)
   useEffect(() => {
-      const angle = 97 + frontFinAngle;
-      const timer = setTimeout(() => {
-          sendCommand(`/servo?target=front&val=${angle}`, `F_SRV:${angle}`);
-      }, 50); // 50ms debounce
-      return () => clearTimeout(timer);
+    const angle = 97 + frontFinAngle;
+    const timer = setTimeout(() => {
+      sendCommand(`/servo?target=front&val=${angle}`, `F_SRV:${angle}`);
+    }, 50); // 50ms debounce
+    return () => clearTimeout(timer);
   }, [frontFinAngle]);
 
   // Back Fin (Rudder)
   useEffect(() => {
-      const angle = 97 + rearFinX;
-      const timer = setTimeout(() => {
-          sendCommand(`/servo?target=back&val=${angle}`, `B_SRV:${angle}`);
-      }, 50); // 50ms debounce
-      return () => clearTimeout(timer);
+    const angle = 97 + rearFinX;
+    const timer = setTimeout(() => {
+      sendCommand(`/servo?target=back&val=${angle}`, `B_SRV:${angle}`);
+    }, 50); // 50ms debounce
+    return () => clearTimeout(timer);
   }, [rearFinX]);
 
   // --- UI SIMULATION EFFECT (Adds "life" to the dashboard) ---
   useEffect(() => {
     const interval = setInterval(() => {
-        // Add some noise to sensors to make UI look alive
-        setSignalStrength(prev => Math.min(100, Math.max(0, prev + (Math.random() - 0.5) * 5)));
-        if (!isCalibrating) {
-          setHeading(prev => (prev + (Math.random() - 0.5) * 2) % 360);
-          setPitch(prev => prev + (Math.random() - 0.5) * 1);
-          setRoll(prev => prev + (Math.random() - 0.5) * 1);
-        }
+      // Add some noise to sensors to make UI look alive
+      setSignalStrength(prev => Math.min(100, Math.max(0, prev + (Math.random() - 0.5) * 5)));
+      if (!isCalibrating) {
+        setHeading(prev => (prev + (Math.random() - 0.5) * 2) % 360);
+        setPitch(prev => prev + (Math.random() - 0.5) * 1);
+        setRoll(prev => prev + (Math.random() - 0.5) * 1);
+      }
 
-        // Minor fluctuations in telemetry
-        setDepth(prev => Math.max(0, prev + (Math.random() - 0.5) * 0.1));
+      // Minor fluctuations in telemetry
+      setDepth(prev => Math.max(0, prev + (Math.random() - 0.5) * 0.1));
 
-        let targetRpm = driveMode === 'stopped' ? 0 : Math.max(0, throttleLimit * 210); // Max 21000 RPM
-        let targetSpeed = driveMode === 'stopped' ? 0 : (throttleLimit / 100) * 7.5; // max 7.5 knots
-        let targetAmps = driveMode === 'stopped' ? 0 : (throttleLimit / 100) * 12;
+      let targetRpm = driveMode === 'stopped' ? 0 : Math.max(0, throttleLimit * 210); // Max 21000 RPM
+      let targetSpeed = driveMode === 'stopped' ? 0 : (throttleLimit / 100) * 7.5; // max 7.5 knots
+      let targetAmps = driveMode === 'stopped' ? 0 : (throttleLimit / 100) * 12;
 
-        setRpm(prev => prev + (targetRpm - prev) * 0.2 + (driveMode !== 'stopped' ? (Math.random() - 0.5) * 50 : 0));
-        setAmps(prev => prev + (targetAmps - prev) * 0.2 + (Math.random() - 0.5) * 0.5);
-        setSpeedKnots(prev => prev + (targetSpeed - prev) * 0.1 + (Math.random() - 0.5) * 0.2);
+      setRpm(prev => prev + (targetRpm - prev) * 0.2 + (driveMode !== 'stopped' ? (Math.random() - 0.5) * 50 : 0));
+      setAmps(prev => prev + (targetAmps - prev) * 0.2 + (Math.random() - 0.5) * 0.5);
+      setSpeedKnots(prev => prev + (targetSpeed - prev) * 0.1 + (Math.random() - 0.5) * 0.2);
 
-        // Slowly drain battery
-        setBatteryVolt(prev => Math.max(9.0, prev - 0.001));
+      // Slowly drain battery
+      setBatteryVolt(prev => Math.max(9.0, prev - 0.001));
 
     }, 1000);
 
@@ -666,26 +666,26 @@ const SubmarineDashboard = () => {
         /> */}
 
         <MainCenterView
-            pitch={pitch}
-            roll={roll}
-            heading={heading}
-            speedKnots={speedKnots}
-            frontFinAngle={frontFinAngle}
-            rearFinX={rearFinX}
-            rearFinY={rearFinY}
-            cameraUrl={cameraUrl}
-            depth={depth}
-            amps={amps}
-            temp={temp}
+          pitch={pitch}
+          roll={roll}
+          heading={heading}
+          speedKnots={speedKnots}
+          frontFinAngle={frontFinAngle}
+          rearFinX={rearFinX}
+          rearFinY={rearFinY}
+          cameraUrl={cameraUrl}
+          depth={depth}
+          amps={amps}
+          temp={temp}
         />
 
         <ControlPanel
-            throttleLimit={throttleLimit} setThrottleLimit={setThrottleLimit}
-            frontFinAngle={frontFinAngle} setFrontFinAngle={setFrontFinAngle}
-            rearFinX={rearFinX} setRearFinX={setRearFinX}
-            rearFinY={rearFinY} setRearFinY={setRearFinY}
-            ballastActive={ballastActive} setBallastActive={setBallastActive}
-            driveMode={driveMode} setDriveMode={setDriveMode}
+          throttleLimit={throttleLimit} setThrottleLimit={setThrottleLimit}
+          frontFinAngle={frontFinAngle} setFrontFinAngle={setFrontFinAngle}
+          rearFinX={rearFinX} setRearFinX={setRearFinX}
+          rearFinY={rearFinY} setRearFinY={setRearFinY}
+          ballastActive={ballastActive} setBallastActive={setBallastActive}
+          driveMode={driveMode} setDriveMode={setDriveMode}
         />
 
       </div>
@@ -734,7 +734,7 @@ const SubmarineDashboard = () => {
               <h3 className="text-base font-bold font-mono tracking-widest text-cyan-400 uppercase">Select USB Serial Port</h3>
               <p className="text-xs text-white/60">Choose a previously approved device or authorize a new one.</p>
             </div>
-            
+
             <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
               {pairedPorts.length > 0 ? (
                 pairedPorts.map((port, idx) => {
